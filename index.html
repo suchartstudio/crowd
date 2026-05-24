@@ -2,21 +2,22 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <!-- ตั้งค่า Viewport ให้เป็น Mobile First และห้ามซูมหน้าเว็บเพื่อประสบการณ์การใช้งานแอปที่ดี -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>คำนวณจำนวนคนเข้าร่วมงาน (Crowd Estimator)</title>
+    <title>คำนวณจำนวนคนเข้าร่วมงาน (Crowd Estimator Pro)</title>
 
-    <!-- Google Fonts: Prompt (Modern Thai) -->
+    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600&display=swap" rel="stylesheet">
 
-    <!-- Leaflet CSS -->
+    <!-- Leaflet & Geoman CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <!-- Leaflet Geoman CSS (เครื่องมือวาดแผนที่) -->
     <link rel="stylesheet" href="https://unpkg.com/@geoman-io/leaflet-geoman-free@latest/dist/leaflet-geoman.css" />
+    <!-- GeoSearch CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-geosearch@3.11.0/dist/geosearch.css" />
 
     <style>
         :root {
             --primary-color: #2563eb;
+            --secondary-color: #1e40af;
             --bg-color: #ffffff;
             --text-color: #1f2937;
         }
@@ -32,14 +33,12 @@
             flex-direction: column;
         }
 
-        /* แผนที่จะอยู่ด้านบนและกินพื้นที่ส่วนใหญ่ */
         #map {
             flex-grow: 1;
             width: 100%;
             z-index: 1;
         }
 
-        /* UI Panel ด้านล่างสำหรับ Mobile First */
         .ui-panel {
             padding: 16px;
             background: var(--bg-color);
@@ -55,72 +54,93 @@
             font-weight: 600;
             margin: 0;
             color: var(--primary-color);
-        }
-
-        .control-group {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .density-label {
             display: flex;
             justify-content: space-between;
-            font-size: 0.95rem;
-            font-weight: 400;
+            align-items: center;
         }
 
-        /* ปรับแต่ง Slider ให้แตะง่ายบนมือถือ */
-        input[type=range] {
-            width: 100%;
-            height: 8px;
-            border-radius: 4px;
-            background: #e5e7eb;
-            outline: none;
-            -webkit-appearance: none;
+        /* ปุ่ม Quick Select */
+        .preset-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
         }
         
-        input[type=range]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            background: var(--primary-color);
-            cursor: pointer;
-        }
-
-        .summary-box {
+        .preset-btn {
+            flex: 1;
+            min-width: 70px;
             background: #f3f4f6;
-            padding: 12px;
-            border-radius: 8px;
-            text-align: center;
-        }
-
-        .summary-box .highlight {
-            font-size: 1.5rem;
-            font-weight: 600;
-            color: var(--primary-color);
-        }
-
-        /* Tooltip บนแผนที่ */
-        .area-tooltip {
-            background: rgba(255, 255, 255, 0.95);
-            border: 2px solid var(--primary-color);
-            border-radius: 8px;
-            padding: 6px 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            padding: 6px;
             font-family: 'Prompt', sans-serif;
-            font-size: 0.85rem;
+            font-size: 0.75rem;
+            color: #4b5563;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .preset-btn.active {
+            background: #dbeafe;
+            border-color: var(--primary-color);
+            color: var(--primary-color);
             font-weight: 600;
-            text-align: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-            color: #1f2937;
+        }
+
+        .control-group { display: flex; flex-direction: column; gap: 8px; }
+        .density-label { display: flex; justify-content: space-between; font-size: 0.95rem; font-weight: 400; }
+
+        input[type=range] {
+            width: 100%; height: 8px; border-radius: 4px; background: #e5e7eb; outline: none; -webkit-appearance: none;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; width: 24px; height: 24px; border-radius: 50%; background: var(--primary-color); cursor: pointer;
+        }
+
+        .summary-box { background: #f3f4f6; padding: 12px; border-radius: 8px; text-align: center; }
+        .summary-box .highlight { font-size: 1.5rem; font-weight: 600; color: var(--primary-color); }
+
+        .action-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .action-btn {
+            flex: 1;
+            padding: 8px;
+            border-radius: 6px;
+            border: none;
+            font-family: 'Prompt', sans-serif;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .btn-export { background-color: #10b981; } /* เขียว */
+        .btn-export:hover { background-color: #059669; }
+        
+        .btn-clear { background-color: #ef4444; } /* แดง */
+        .btn-clear:hover { background-color: #dc2626; }
+
+        .area-tooltip {
+            background: rgba(255, 255, 255, 0.95); border: 2px solid var(--primary-color);
+            border-radius: 8px; padding: 6px 10px; font-family: 'Prompt', sans-serif;
+            font-size: 0.85rem; font-weight: 600; text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2); color: #1f2937;
         }
         .area-tooltip span { color: var(--primary-color); font-size: 1.1rem; }
 
-        /* การปรับแต่งสำหรับหน้าจอ Desktop */
+        /* Loader สำหรับตอน Capture ภาพ */
+        #loader { display: none; text-align: center; font-size: 0.8rem; color: #10b981; }
+
         @media (min-width: 768px) {
             body { flex-direction: row; }
-            .ui-panel { width: 320px; box-shadow: -4px 0 6px -1px rgba(0,0,0,0.1); }
+            .ui-panel { width: 340px; box-shadow: -4px 0 6px -1px rgba(0,0,0,0.1); overflow-y: auto; }
         }
     </style>
 </head>
@@ -128,19 +148,26 @@
 
     <div id="map"></div>
 
-    <div class="ui-panel">
-        <h2 class="header-title">คำนวณจำนวนผู้เข้าร่วมงาน</h2>
+    <div class="ui-panel" id="ui-panel">
+        <h2 class="header-title">
+            คำนวณจำนวนคน 
+            <span style="font-size: 0.7rem; background: #dbeafe; color: var(--primary-color); padding: 2px 6px; border-radius: 10px;">Pro</span>
+        </h2>
         
+        <!-- Preset Buttons -->
+        <div class="preset-group" id="preset-group">
+            <button class="preset-btn" data-val="0.5">เดินสบาย (0.5)</button>
+            <button class="preset-btn active" data-val="1.5">ตลาดนัด (1.5)</button>
+            <button class="preset-btn" data-val="3.0">คอนเสิร์ต (3.0)</button>
+            <button class="preset-btn" data-val="4.5">แออัด (4.5)</button>
+        </div>
+
         <div class="control-group">
             <div class="density-label">
-                <span>ความหนาแน่น (คน/ตร.ม.)</span>
+                <span>ปรับความหนาแน่นเอง</span>
                 <span id="density-val" style="font-weight: 600; color: var(--primary-color);">1.5</span>
             </div>
             <input type="range" id="density-slider" min="0.1" max="5.0" step="0.1" value="1.5">
-            <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #6b7280;">
-                <span>หลวม (0.1)</span>
-                <span>แออัด (5.0)</span>
-            </div>
         </div>
 
         <div class="summary-box">
@@ -150,51 +177,58 @@
             <div id="total-people" class="highlight" style="font-size: 1.8rem;">0 คน</div>
         </div>
         
-        <p style="font-size: 0.75rem; color: #9ca3af; text-align: center; margin: 0;">
-            * ใช้เครื่องมือมุมซ้ายบนเพื่อวาดพื้นที่ปิด
+        <div class="action-group">
+            <button class="action-btn btn-export" id="btn-export">📸 เซฟเป็นรูป</button>
+            <button class="action-btn btn-clear" id="btn-clear">🗑️ ล้างแผนที่</button>
+        </div>
+        <div id="loader">กำลังบันทึกภาพ...</div>
+        
+        <p style="font-size: 0.75rem; color: #9ca3af; text-align: center; margin: 0; padding-top: 5px;">
+            🔍 ใช้แว่นขยายบนแผนที่เพื่อหาสถานที่
         </p>
     </div>
 
     <!-- Scripts -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/@geoman-io/leaflet-geoman-free@latest/dist/leaflet-geoman.min.js"></script>
-    <!-- Turf.js สำหรับคำนวณพื้นที่เชิงพื้นที่ (Spatial Analysis) -->
     <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
+    <!-- Plugin: GeoSearch -->
+    <script src="https://unpkg.com/leaflet-geosearch@3.11.0/dist/bundle.min.js"></script>
+    <!-- Plugin: html2canvas สำหรับ Export Image -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
     <script>
-        // 1. ตั้งค่าเริ่มต้นแผนที่ (พิกัด ขอนแก่น)
+        // 1. ตั้งค่าเริ่มต้นแผนที่
         const map = L.map('map').setView([16.4322, 102.8236], 15);
 
-        // 2. เพิ่มชั้นข้อมูลแผนที่ (OpenStreetMap)
+        // เพิ่ม crossOrigin: true เพื่อให้ html2canvas สามารถดึงภาพแผนที่ไปแปลงได้
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
-            attribution: '© OpenStreetMap contributors'
+            attribution: '© OpenStreetMap contributors',
+            crossOrigin: true 
         }).addTo(map);
 
-        // 3. ตั้งค่าเครื่องมือวาด (Leaflet Geoman)
+        // 2. ระบบค้นหาสถานที่ (Geocoding)
+        const searchControl = new GeoSearch.GeoSearchControl({
+            provider: new GeoSearch.OpenStreetMapProvider(),
+            style: 'button',
+            autoClose: true,
+            searchLabel: 'ค้นหาสถานที่...',
+            keepResult: true
+        });
+        map.addControl(searchControl);
+
+        // 3. ตั้งค่าเครื่องมือวาด
         map.pm.addControls({
             position: 'topleft',
-            drawMarker: false,
-            drawCircleMarker: false,
-            drawPolyline: false,
-            drawRectangle: true,
-            drawPolygon: true,
-            drawCircle: false,
-            drawText: false,
-            editMode: true,
-            dragMode: false,
-            cutPolygon: true, // เปิดให้เจาะรูพื้นที่ได้ (เช่น เจาะรูเวทีออก)
-            removalMode: true
+            drawMarker: false, drawCircleMarker: false, drawPolyline: false,
+            drawRectangle: true, drawPolygon: true, drawCircle: false, drawText: false,
+            editMode: true, dragMode: false, cutPolygon: true, removalMode: true
         });
 
-        // กำหนดสไตล์เส้นตอนวาด
-        map.pm.setPathOptions({
-            color: '#2563eb',
-            fillColor: '#3b82f6',
-            fillOpacity: 0.4
-        });
+        map.pm.setPathOptions({ color: '#2563eb', fillColor: '#3b82f6', fillOpacity: 0.4 });
 
-        // 4. ตัวแปรเก็บข้อมูลพื้นที่
+        // 4. กลุ่มเก็บข้อมูลพื้นที่วาด
         const drawnItems = new L.FeatureGroup();
         map.addLayer(drawnItems);
 
@@ -203,24 +237,50 @@
         const totalAreaText = document.getElementById('total-area');
         const totalPeopleText = document.getElementById('total-people');
 
-        // 5. ฟังก์ชันคำนวณและอัปเดตข้อมูล
+        // --- ระบบ Local Storage Auto-Save ---
+        const STORAGE_KEY = 'crowdMapData';
+
+        function saveToLocalStorage() {
+            const data = drawnItems.toGeoJSON();
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        }
+
+        function loadFromLocalStorage() {
+            const data = localStorage.getItem(STORAGE_KEY);
+            if (data) {
+                const geoJsonData = JSON.parse(data);
+                L.geoJSON(geoJsonData, {
+                    onEachFeature: (feature, layer) => {
+                        drawnItems.addLayer(layer);
+                        layer.on('pm:edit', () => { updateCalculations(); saveToLocalStorage(); });
+                    },
+                    style: { color: '#2563eb', fillColor: '#3b82f6', fillOpacity: 0.4 }
+                });
+                updateCalculations();
+                // ซูมไปที่พื้นที่ที่วาดไว้ (ถ้ามี)
+                if(drawnItems.getBounds().isValid()) {
+                    map.fitBounds(drawnItems.getBounds());
+                }
+            }
+        }
+
+        // 5. ฟังก์ชันคำนวณและอัปเดต
         function updateCalculations() {
             let totalArea = 0;
             let density = parseFloat(densitySlider.value);
 
-            // อัปเดตตัวเลขบน UI
             densityValText.textContent = density.toFixed(1);
 
             drawnItems.eachLayer((layer) => {
-                // แปลง Layer เป็น GeoJSON เพื่อให้ Turf.js คำนวณ
+                // ข้าม layer ที่ไม่ใช่ Polygon
+                if (!layer.toGeoJSON) return; 
+                
                 const geojson = layer.toGeoJSON();
-                // คำนวณพื้นที่ (ตร.ม.)
                 const areaSqM = turf.area(geojson);
                 totalArea += areaSqM;
 
                 const people = Math.round(areaSqM * density);
 
-                // สร้างป้าย Tooltip แสดงบนแผนที่
                 const tooltipContent = `
                     พื้นที่: ${areaSqM.toLocaleString('th-TH', {maximumFractionDigits: 1})} ตร.ม.<br>
                     คนประมาณ: <span>${people.toLocaleString('th-TH')}</span>
@@ -229,46 +289,87 @@
                 if (layer.getTooltip()) {
                     layer.setTooltipContent(tooltipContent);
                 } else {
-                    layer.bindTooltip(tooltipContent, {
-                        permanent: true,
-                        direction: 'center',
-                        className: 'area-tooltip'
-                    }).openTooltip();
+                    layer.bindTooltip(tooltipContent, { permanent: true, direction: 'center', className: 'area-tooltip' }).openTooltip();
                 }
             });
 
-            // อัปเดตแถบสรุปผลด้านล่าง/ขวา
             const grandTotalPeople = Math.round(totalArea * density);
             totalAreaText.textContent = `${totalArea.toLocaleString('th-TH', {maximumFractionDigits: 2})} ตร.ม.`;
             totalPeopleText.textContent = `${grandTotalPeople.toLocaleString('th-TH')} คน`;
         }
 
-        // 6. ดักจับ Events ของแผนที่และการลาก Slider
+        // 6. Events แผนที่ (บวก Save Data)
         map.on('pm:create', (e) => {
             const layer = e.layer;
             drawnItems.addLayer(layer);
-            
-            // เมื่อมีการแก้ไขรูปร่าง ให้คำนวณใหม่
-            layer.on('pm:edit', updateCalculations);
-            
+            layer.on('pm:edit', () => { updateCalculations(); saveToLocalStorage(); });
             updateCalculations();
+            saveToLocalStorage();
         });
 
         map.on('pm:remove', (e) => {
             drawnItems.removeLayer(e.layer);
             updateCalculations();
+            saveToLocalStorage();
         });
 
-        // เมื่อเจาะรู Polygon (Cut)
         map.on('pm:cut', (e) => {
             drawnItems.removeLayer(e.originalLayer);
             drawnItems.addLayer(e.layer);
-            e.layer.on('pm:edit', updateCalculations);
+            e.layer.on('pm:edit', () => { updateCalculations(); saveToLocalStorage(); });
+            updateCalculations();
+            saveToLocalStorage();
+        });
+
+        // 7. จัดการ Slider และ Preset Buttons
+        densitySlider.addEventListener('input', () => {
+            // ล้าง Active ปุ่ม Preset
+            document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
             updateCalculations();
         });
 
-        // เมื่อเลื่อน Slider ความหนาแน่น
-        densitySlider.addEventListener('input', updateCalculations);
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                densitySlider.value = e.target.getAttribute('data-val');
+                updateCalculations();
+            });
+        });
+
+        // 8. ปุ่มล้างกระดาน
+        document.getElementById('btn-clear').addEventListener('click', () => {
+            if(confirm('คุณต้องการล้างพื้นที่ทั้งหมดใช่หรือไม่?')) {
+                drawnItems.clearLayers();
+                updateCalculations();
+                localStorage.removeItem(STORAGE_KEY);
+            }
+        });
+
+        // 9. ระบบ Export เป็นรูปภาพ (Screenshot)
+        document.getElementById('btn-export').addEventListener('click', () => {
+            const loader = document.getElementById('loader');
+            loader.style.display = 'block';
+            
+            // ใช้ html2canvas ถ่ายภาพทั้งหน้าจอ (body)
+            html2canvas(document.body, { 
+                useCORS: true, // จำเป็นสำหรับโหลดภาพแผนที่ข้ามโดเมน
+                allowTaint: false,
+                scale: 2 // ภาพคมชัดขึ้น 2 เท่า
+            }).then(canvas => {
+                loader.style.display = 'none';
+                const link = document.createElement('a');
+                link.download = `crowd-estimate-${new Date().getTime()}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            }).catch(err => {
+                loader.style.display = 'none';
+                alert('เกิดข้อผิดพลาดในการบันทึกภาพ: ' + err);
+            });
+        });
+
+        // 10. โหลดข้อมูลเมื่อเปิดเว็บ
+        window.addEventListener('load', loadFromLocalStorage);
 
     </script>
 </body>
