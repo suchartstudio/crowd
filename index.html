@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <!-- ตั้งค่า Viewport ให้เป็น Mobile First และห้ามซูมหน้าเว็บเพื่อประสบการณ์การใช้งานแอปที่ดี -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>คำนวณจำนวนคนเข้าร่วมงาน (Crowd Estimator)</title>
+
+    <!-- Google Fonts: Prompt (Modern Thai) -->
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600&display=swap" rel="stylesheet">
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- Leaflet Geoman CSS (เครื่องมือวาดแผนที่) -->
+    <link rel="stylesheet" href="https://unpkg.com/@geoman-io/leaflet-geoman-free@latest/dist/leaflet-geoman.css" />
+
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --bg-color: #ffffff;
+            --text-color: #1f2937;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: 'Prompt', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* แผนที่จะอยู่ด้านบนและกินพื้นที่ส่วนใหญ่ */
+        #map {
+            flex-grow: 1;
+            width: 100%;
+            z-index: 1;
+        }
+
+        /* UI Panel ด้านล่างสำหรับ Mobile First */
+        .ui-panel {
+            padding: 16px;
+            background: var(--bg-color);
+            box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.1);
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .header-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin: 0;
+            color: var(--primary-color);
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .density-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.95rem;
+            font-weight: 400;
+        }
+
+        /* ปรับแต่ง Slider ให้แตะง่ายบนมือถือ */
+        input[type=range] {
+            width: 100%;
+            height: 8px;
+            border-radius: 4px;
+            background: #e5e7eb;
+            outline: none;
+            -webkit-appearance: none;
+        }
+        
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            cursor: pointer;
+        }
+
+        .summary-box {
+            background: #f3f4f6;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .summary-box .highlight {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        /* Tooltip บนแผนที่ */
+        .area-tooltip {
+            background: rgba(255, 255, 255, 0.95);
+            border: 2px solid var(--primary-color);
+            border-radius: 8px;
+            padding: 6px 10px;
+            font-family: 'Prompt', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            color: #1f2937;
+        }
+        .area-tooltip span { color: var(--primary-color); font-size: 1.1rem; }
+
+        /* การปรับแต่งสำหรับหน้าจอ Desktop */
+        @media (min-width: 768px) {
+            body { flex-direction: row; }
+            .ui-panel { width: 320px; box-shadow: -4px 0 6px -1px rgba(0,0,0,0.1); }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="map"></div>
+
+    <div class="ui-panel">
+        <h2 class="header-title">คำนวณจำนวนผู้เข้าร่วมงาน</h2>
+        
+        <div class="control-group">
+            <div class="density-label">
+                <span>ความหนาแน่น (คน/ตร.ม.)</span>
+                <span id="density-val" style="font-weight: 600; color: var(--primary-color);">1.5</span>
+            </div>
+            <input type="range" id="density-slider" min="0.1" max="5.0" step="0.1" value="1.5">
+            <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #6b7280;">
+                <span>หลวม (0.1)</span>
+                <span>แออัด (5.0)</span>
+            </div>
+        </div>
+
+        <div class="summary-box">
+            <div style="font-size: 0.85rem; color: #4b5563;">พื้นที่รวมทั้งหมด</div>
+            <div id="total-area" class="highlight">0.00 ตร.ม.</div>
+            <div style="font-size: 0.85rem; color: #4b5563; margin-top: 8px;">จำนวนคนโดยประมาณ</div>
+            <div id="total-people" class="highlight" style="font-size: 1.8rem;">0 คน</div>
+        </div>
+        
+        <p style="font-size: 0.75rem; color: #9ca3af; text-align: center; margin: 0;">
+            * ใช้เครื่องมือมุมซ้ายบนเพื่อวาดพื้นที่ปิด
+        </p>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/@geoman-io/leaflet-geoman-free@latest/dist/leaflet-geoman.min.js"></script>
+    <!-- Turf.js สำหรับคำนวณพื้นที่เชิงพื้นที่ (Spatial Analysis) -->
+    <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
+
+    <script>
+        // 1. ตั้งค่าเริ่มต้นแผนที่ (พิกัด ขอนแก่น)
+        const map = L.map('map').setView([16.4322, 102.8236], 15);
+
+        // 2. เพิ่มชั้นข้อมูลแผนที่ (OpenStreetMap)
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        // 3. ตั้งค่าเครื่องมือวาด (Leaflet Geoman)
+        map.pm.addControls({
+            position: 'topleft',
+            drawMarker: false,
+            drawCircleMarker: false,
+            drawPolyline: false,
+            drawRectangle: true,
+            drawPolygon: true,
+            drawCircle: false,
+            drawText: false,
+            editMode: true,
+            dragMode: false,
+            cutPolygon: true, // เปิดให้เจาะรูพื้นที่ได้ (เช่น เจาะรูเวทีออก)
+            removalMode: true
+        });
+
+        // กำหนดสไตล์เส้นตอนวาด
+        map.pm.setPathOptions({
+            color: '#2563eb',
+            fillColor: '#3b82f6',
+            fillOpacity: 0.4
+        });
+
+        // 4. ตัวแปรเก็บข้อมูลพื้นที่
+        const drawnItems = new L.FeatureGroup();
+        map.addLayer(drawnItems);
+
+        const densitySlider = document.getElementById('density-slider');
+        const densityValText = document.getElementById('density-val');
+        const totalAreaText = document.getElementById('total-area');
+        const totalPeopleText = document.getElementById('total-people');
+
+        // 5. ฟังก์ชันคำนวณและอัปเดตข้อมูล
+        function updateCalculations() {
+            let totalArea = 0;
+            let density = parseFloat(densitySlider.value);
+
+            // อัปเดตตัวเลขบน UI
+            densityValText.textContent = density.toFixed(1);
+
+            drawnItems.eachLayer((layer) => {
+                // แปลง Layer เป็น GeoJSON เพื่อให้ Turf.js คำนวณ
+                const geojson = layer.toGeoJSON();
+                // คำนวณพื้นที่ (ตร.ม.)
+                const areaSqM = turf.area(geojson);
+                totalArea += areaSqM;
+
+                const people = Math.round(areaSqM * density);
+
+                // สร้างป้าย Tooltip แสดงบนแผนที่
+                const tooltipContent = `
+                    พื้นที่: ${areaSqM.toLocaleString('th-TH', {maximumFractionDigits: 1})} ตร.ม.<br>
+                    คนประมาณ: <span>${people.toLocaleString('th-TH')}</span>
+                `;
+
+                if (layer.getTooltip()) {
+                    layer.setTooltipContent(tooltipContent);
+                } else {
+                    layer.bindTooltip(tooltipContent, {
+                        permanent: true,
+                        direction: 'center',
+                        className: 'area-tooltip'
+                    }).openTooltip();
+                }
+            });
+
+            // อัปเดตแถบสรุปผลด้านล่าง/ขวา
+            const grandTotalPeople = Math.round(totalArea * density);
+            totalAreaText.textContent = `${totalArea.toLocaleString('th-TH', {maximumFractionDigits: 2})} ตร.ม.`;
+            totalPeopleText.textContent = `${grandTotalPeople.toLocaleString('th-TH')} คน`;
+        }
+
+        // 6. ดักจับ Events ของแผนที่และการลาก Slider
+        map.on('pm:create', (e) => {
+            const layer = e.layer;
+            drawnItems.addLayer(layer);
+            
+            // เมื่อมีการแก้ไขรูปร่าง ให้คำนวณใหม่
+            layer.on('pm:edit', updateCalculations);
+            
+            updateCalculations();
+        });
+
+        map.on('pm:remove', (e) => {
+            drawnItems.removeLayer(e.layer);
+            updateCalculations();
+        });
+
+        // เมื่อเจาะรู Polygon (Cut)
+        map.on('pm:cut', (e) => {
+            drawnItems.removeLayer(e.originalLayer);
+            drawnItems.addLayer(e.layer);
+            e.layer.on('pm:edit', updateCalculations);
+            updateCalculations();
+        });
+
+        // เมื่อเลื่อน Slider ความหนาแน่น
+        densitySlider.addEventListener('input', updateCalculations);
+
+    </script>
+</body>
+</html>
