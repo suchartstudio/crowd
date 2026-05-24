@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>คำนวณจำนวนคนเข้าร่วมงาน (Crowd Estimator Pro)</title>
+    <title>คำนวณจำนวนคนเข้าร่วมงาน (Crowd Estimator Pro - Fixed Capture)</title>
 
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600&display=swap" rel="stylesheet">
@@ -59,73 +59,31 @@
             align-items: center;
         }
 
-        /* ปุ่ม Quick Select */
-        .preset-group {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-        }
-        
+        .preset-group { display: flex; flex-wrap: wrap; gap: 8px; }
         .preset-btn {
-            flex: 1;
-            min-width: 70px;
-            background: #f3f4f6;
-            border: 1px solid #d1d5db;
-            border-radius: 6px;
-            padding: 6px;
-            font-family: 'Prompt', sans-serif;
-            font-size: 0.75rem;
-            color: #4b5563;
-            cursor: pointer;
-            transition: all 0.2s;
+            flex: 1; min-width: 70px; background: #f3f4f6; border: 1px solid #d1d5db;
+            border-radius: 6px; padding: 6px; font-family: 'Prompt', sans-serif;
+            font-size: 0.75rem; color: #4b5563; cursor: pointer; transition: all 0.2s;
         }
-
-        .preset-btn.active {
-            background: #dbeafe;
-            border-color: var(--primary-color);
-            color: var(--primary-color);
-            font-weight: 600;
-        }
+        .preset-btn.active { background: #dbeafe; border-color: var(--primary-color); color: var(--primary-color); font-weight: 600; }
 
         .control-group { display: flex; flex-direction: column; gap: 8px; }
         .density-label { display: flex; justify-content: space-between; font-size: 0.95rem; font-weight: 400; }
 
-        input[type=range] {
-            width: 100%; height: 8px; border-radius: 4px; background: #e5e7eb; outline: none; -webkit-appearance: none;
-        }
-        input[type=range]::-webkit-slider-thumb {
-            -webkit-appearance: none; width: 24px; height: 24px; border-radius: 50%; background: var(--primary-color); cursor: pointer;
-        }
+        input[type=range] { width: 100%; height: 8px; border-radius: 4px; background: #e5e7eb; outline: none; -webkit-appearance: none; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 24px; height: 24px; border-radius: 50%; background: var(--primary-color); cursor: pointer; }
 
         .summary-box { background: #f3f4f6; padding: 12px; border-radius: 8px; text-align: center; }
         .summary-box .highlight { font-size: 1.5rem; font-weight: 600; color: var(--primary-color); }
 
-        .action-group {
-            display: flex;
-            gap: 10px;
-        }
-
+        .action-group { display: flex; gap: 10px; }
         .action-btn {
-            flex: 1;
-            padding: 8px;
-            border-radius: 6px;
-            border: none;
-            font-family: 'Prompt', sans-serif;
-            font-weight: 600;
-            font-size: 0.85rem;
-            cursor: pointer;
-            color: white;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 5px;
+            flex: 1; padding: 8px; border-radius: 6px; border: none; font-family: 'Prompt', sans-serif;
+            font-weight: 600; font-size: 0.85rem; cursor: pointer; color: white;
+            display: flex; justify-content: center; align-items: center; gap: 5px;
         }
-
-        .btn-export { background-color: #10b981; } /* เขียว */
-        .btn-export:hover { background-color: #059669; }
-        
-        .btn-clear { background-color: #ef4444; } /* แดง */
-        .btn-clear:hover { background-color: #dc2626; }
+        .btn-export { background-color: #10b981; } .btn-export:hover { background-color: #059669; }
+        .btn-clear { background-color: #ef4444; } .btn-clear:hover { background-color: #dc2626; }
 
         .area-tooltip {
             background: rgba(255, 255, 255, 0.95); border: 2px solid var(--primary-color);
@@ -135,8 +93,7 @@
         }
         .area-tooltip span { color: var(--primary-color); font-size: 1.1rem; }
 
-        /* Loader สำหรับตอน Capture ภาพ */
-        #loader { display: none; text-align: center; font-size: 0.8rem; color: #10b981; }
+        #loader { display: none; text-align: center; font-size: 0.8rem; color: #10b981; font-weight: 600; }
 
         @media (min-width: 768px) {
             body { flex-direction: row; }
@@ -154,7 +111,6 @@
             <span style="font-size: 0.7rem; background: #dbeafe; color: var(--primary-color); padding: 2px 6px; border-radius: 10px;">Pro</span>
         </h2>
         
-        <!-- Preset Buttons -->
         <div class="preset-group" id="preset-group">
             <button class="preset-btn" data-val="0.5">เดินสบาย (0.5)</button>
             <button class="preset-btn active" data-val="1.5">ตลาดนัด (1.5)</button>
@@ -181,11 +137,7 @@
             <button class="action-btn btn-export" id="btn-export">📸 เซฟเป็นรูป</button>
             <button class="action-btn btn-clear" id="btn-clear">🗑️ ล้างแผนที่</button>
         </div>
-        <div id="loader">กำลังบันทึกภาพ...</div>
-        
-        <p style="font-size: 0.75rem; color: #9ca3af; text-align: center; margin: 0; padding-top: 5px;">
-            🔍 ใช้แว่นขยายบนแผนที่เพื่อหาสถานที่
-        </p>
+        <div id="loader">กำลังบันทึกภาพแบบคุณภาพสูง...</div>
     </div>
 
     <!-- Scripts -->
@@ -194,27 +146,29 @@
     <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
     <!-- Plugin: GeoSearch -->
     <script src="https://unpkg.com/leaflet-geosearch@3.11.0/dist/bundle.min.js"></script>
-    <!-- Plugin: html2canvas สำหรับ Export Image -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <!-- === FIXED: Switched from html2canvas to dom-to-image-more === -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dom-to-image-more/3.3.0/dom-to-image-more.min.js"></script>
 
     <script>
         // 1. ตั้งค่าเริ่มต้นแผนที่
-        const map = L.map('map').setView([16.4322, 102.8236], 15);
+        const map = L.map('map', {
+            // เพิ่มการตั้งค่าเพื่อช่วยให้การ Capture ภาพเสถียรขึ้นในบางอุปกรณ์
+            fadeAnimation: false,
+            zoomAnimation: false
+        }).setView([16.4322, 102.8236], 15);
 
-        // เพิ่ม crossOrigin: true เพื่อให้ html2canvas สามารถดึงภาพแผนที่ไปแปลงได้
+        // เพิ่ม crossOrigin: true สำหรับโหลดภาพแผนที่
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
             attribution: '© OpenStreetMap contributors',
             crossOrigin: true 
         }).addTo(map);
 
-        // 2. ระบบค้นหาสถานที่ (Geocoding)
+        // 2. ระบบค้นหาสถานที่
         const searchControl = new GeoSearch.GeoSearchControl({
             provider: new GeoSearch.OpenStreetMapProvider(),
-            style: 'button',
-            autoClose: true,
-            searchLabel: 'ค้นหาสถานที่...',
-            keepResult: true
+            style: 'button', autoClose: true, searchLabel: 'ค้นหาสถานที่...', keepResult: true
         });
         map.addControl(searchControl);
 
@@ -257,9 +211,8 @@
                     style: { color: '#2563eb', fillColor: '#3b82f6', fillOpacity: 0.4 }
                 });
                 updateCalculations();
-                // ซูมไปที่พื้นที่ที่วาดไว้ (ถ้ามี)
                 if(drawnItems.getBounds().isValid()) {
-                    map.fitBounds(drawnItems.getBounds());
+                    map.fitBounds(drawnItems.getBounds(), {padding: [20, 20]});
                 }
             }
         }
@@ -268,17 +221,13 @@
         function updateCalculations() {
             let totalArea = 0;
             let density = parseFloat(densitySlider.value);
-
             densityValText.textContent = density.toFixed(1);
 
             drawnItems.eachLayer((layer) => {
-                // ข้าม layer ที่ไม่ใช่ Polygon
                 if (!layer.toGeoJSON) return; 
-                
                 const geojson = layer.toGeoJSON();
                 const areaSqM = turf.area(geojson);
                 totalArea += areaSqM;
-
                 const people = Math.round(areaSqM * density);
 
                 const tooltipContent = `
@@ -306,13 +255,11 @@
             updateCalculations();
             saveToLocalStorage();
         });
-
         map.on('pm:remove', (e) => {
             drawnItems.removeLayer(e.layer);
             updateCalculations();
             saveToLocalStorage();
         });
-
         map.on('pm:cut', (e) => {
             drawnItems.removeLayer(e.originalLayer);
             drawnItems.addLayer(e.layer);
@@ -323,11 +270,9 @@
 
         // 7. จัดการ Slider และ Preset Buttons
         densitySlider.addEventListener('input', () => {
-            // ล้าง Active ปุ่ม Preset
             document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
             updateCalculations();
         });
-
         document.querySelectorAll('.preset-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
@@ -346,25 +291,48 @@
             }
         });
 
-        // 9. ระบบ Export เป็นรูปภาพ (Screenshot)
+        // === FIXED: นำระบบ Export เป็นรูปภาพเวอร์ชันปรับปรุงมาใช้ ===
         document.getElementById('btn-export').addEventListener('click', () => {
             const loader = document.getElementById('loader');
+            const btn = document.getElementById('btn-export');
+            
+            // ล็อคปุ่มและแสดง Loader
+            btn.disabled = true;
+            btn.innerText = '⏳ กำลังบันทึก...';
             loader.style.display = 'block';
             
-            // ใช้ html2canvas ถ่ายภาพทั้งหน้าจอ (body)
-            html2canvas(document.body, { 
-                useCORS: true, // จำเป็นสำหรับโหลดภาพแผนที่ข้ามโดเมน
-                allowTaint: false,
-                scale: 2 // ภาพคมชัดขึ้น 2 เท่า
-            }).then(canvas => {
+            // ก่อนบันทึก เราต้องบังคับให้ระบบจัดหน้าแผนที่ใหม่ชั่วคราว
+            // เพื่อให้คำนวณตำแหน่ง SVG/Transforms ล่าสุดได้อย่างถูกต้อง
+            map.invalidateSize(false);
+
+            // ใช้ domtoimage.toPng แทน html2canvas
+            domtoimage.toPng(document.body, {
+                // กำหนดคุณภาพของภาพ
+                quality: 1.0,
+                // ข้ามการโหลด font บางอย่างที่มีปัญหาในบางเบราว์เซอร์
+                style: {
+                    'font-family': 'Prompt, sans-serif'
+                }
+            })
+            .then(function (dataUrl) {
                 loader.style.display = 'none';
+                
+                // สร้างลิงก์สำหรับดาวน์โหลด
                 const link = document.createElement('a');
                 link.download = `crowd-estimate-${new Date().getTime()}.png`;
-                link.href = canvas.toDataURL('image/png');
+                link.href = dataUrl;
                 link.click();
-            }).catch(err => {
+                
+                // ปลดล็อคปุ่ม
+                btn.disabled = false;
+                btn.innerText = '📸 เซฟเป็นรูป';
+            })
+            .catch(function (error) {
+                console.error('oops, something went wrong!', error);
                 loader.style.display = 'none';
-                alert('เกิดข้อผิดพลาดในการบันทึกภาพ: ' + err);
+                btn.disabled = false;
+                btn.innerText = '📸 เซฟเป็นรูป';
+                alert('เกิดข้อผิดพลาดในการบันทึกภาพ: ลองกดเซฟอีกครั้ง หรือใช้เบราว์เซอร์อื่น');
             });
         });
 
