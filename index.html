@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>ระบบคำนวณพื้นที่จัดงานและที่จอดรถ (Crowd & Parking Estimator)</title>
+    <title>ระบบคำนวณพื้นที่จัดงานและที่จอดรถ (Crowd & Parking Estimator Pro)</title>
 
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600&display=swap" rel="stylesheet">
 
@@ -97,6 +97,10 @@
 
         #loader { display: none; text-align: center; font-size: 0.8rem; color: var(--success-color); font-weight: 600; }
 
+        /* ปรับแต่งปุ่มเลือกชั้นข้อมูลของ Leaflet ให้ใหญ่ขึ้นเล็กน้อยสไตล์มือถือ */
+        .leaflet-control-layers-toggle { width: 40px !important; height: 40px !important; }
+        .leaflet-control-layers { font-family: 'Prompt', sans-serif; font-size: 0.85rem; border-radius: 8px !important; }
+
         @media (min-width: 768px) {
             body { flex-direction: row; }
             .ui-panel { width: 350px; box-shadow: -4px 0 6px -1px rgba(0,0,0,0.1); overflow-y: auto; }
@@ -108,11 +112,11 @@
     <div id="map"></div>
 
     <div class="ui-panel">
-        <h2 class="header-title">ระบบคำนวณพื้นที่</h2>
+        <h2 class="header-title">ระบบคำนวณพื้นที่ Pro</h2>
         
         <div class="mode-tabs">
-            <button class="tab-btn active" id="tab-crowd" onclick="switchMode('crowd')">คำนวณคน</button>
-            <button class="tab-btn" id="tab-parking" onclick="switchMode('parking')">ที่จอดรถ</button>
+            <button class="tab-btn active" id="tab-crowd" onclick="switchMode('crowd')">👥 คำนวณคน</button>
+            <button class="tab-btn" id="tab-parking" onclick="switchMode('parking')">🚗 ที่จอดรถ</button>
         </div>
         
         <div id="section-crowd" class="control-section active">
@@ -168,21 +172,41 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dom-to-image-more/3.3.0/dom-to-image-more.min.js"></script>
 
     <script>
-        let currentMode = 'crowd'; // โหมดเริ่มต้น: 'crowd' หรือ 'parking'
+        let currentMode = 'crowd'; 
 
-        // 1. ตั้งค่าเริ่มต้นแผนที่
-        const map = L.map('map', { fadeAnimation: false, zoomAnimation: false }).setView([16.4322, 102.8236], 15);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19, attribution: '© OpenStreetMap contributors', crossOrigin: true 
-        }).addTo(map);
+        // 1. กำหนดชั้นข้อมูลแผนที่ (Base Layers)
+        const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19, attribution: '© OpenStreetMap contributors', crossOrigin: true
+        });
 
-        // 2. ค้นหาสถานที่
+        const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            maxZoom: 19, 
+            attribution: 'Tiles © Esri — Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community', 
+            crossOrigin: true
+        });
+
+        // 2. ตั้งค่าเริ่มต้นแผนที่ (ใส่ osmLayer เป็นเลเยอร์หลักตอนเริ่มต้น)
+        const map = L.map('map', { 
+            fadeAnimation: false, 
+            zoomAnimation: false,
+            layers: [osmLayer] // โหลด OSM ขึ้นมาก่อน
+        }).setView([16.4322, 102.8236], 15);
+
+        // 3. เพิ่มปุ่มสลับแผนที่มุมขวาบน (Layer Control)
+        const baseMaps = {
+            "🗺️ แผนที่ปกติ (OSM)": osmLayer,
+            "🛰️ ภาพถ่ายดาวเทียม": satelliteLayer
+        };
+        // ปิด overlayMaps (เป็น null) เพราะเราใช้ FeatureGroup แยกจัดการ
+        L.control.layers(baseMaps, null, { position: 'topright', collapsed: true }).addTo(map);
+
+        // 4. ระบบค้นหาสถานที่
         const searchControl = new GeoSearch.GeoSearchControl({
             provider: new GeoSearch.OpenStreetMapProvider(), style: 'button', autoClose: true, searchLabel: 'ค้นหาสถานที่...', keepResult: true
         });
         map.addControl(searchControl);
 
-        // 3. เครื่องมือวาด
+        // 5. เครื่องมือวาด
         map.pm.addControls({
             position: 'topleft', drawMarker: false, drawCircleMarker: false, drawPolyline: false,
             drawRectangle: true, drawPolygon: true, drawCircle: false, drawText: false,
@@ -220,12 +244,11 @@
             updateCalculations();
         }
 
-        // 4. ฟังก์ชันคำนวณหลัก
+        // 6. ฟังก์ชันคำนวณหลัก
         function updateCalculations() {
             let totalArea = 0;
             let grandTotalResults = 0;
 
-            // ดึงค่าตามโหมดปัจจุบัน
             let crowdDensity = parseFloat(sliderCrowd.value);
             let parkingSpacePerCar = parseFloat(sliderParking.value);
 
@@ -248,7 +271,6 @@
                         คนประมาณ: <span>${people.toLocaleString('th-TH')} คน</span>
                     `;
                 } else {
-                    // ใช้ Math.floor เพราะรถยนต์นับเป็นคันเต็มๆ ไม่ปัดเศษขึ้นเพื่อความปลอดภัยของพื้นที่
                     const cars = Math.floor(areaSqM / parkingSpacePerCar);
                     grandTotalResults += cars;
                     tooltipContent = `
@@ -273,8 +295,8 @@
             }
         }
 
-        // 5. ดักจับ Event ข้อมูลเลื่อนหรือเปลี่ยนรูปทรง
-        const STORAGE_KEY = 'crowdMapData_v2';
+        // 7. ดักจับ Event ข้อมูลเลื่อนหรือเปลี่ยนรูปทรง + LocalStorage
+        const STORAGE_KEY = 'crowdMapData_v3';
         function saveToLocalStorage() { localStorage.setItem(STORAGE_KEY, JSON.stringify(drawnItems.toGeoJSON())); }
 
         function loadFromLocalStorage() {
@@ -293,7 +315,6 @@
         }
 
         map.on('pm:create', (e) => {
-            e.layer.addHtml = true;
             drawnItems.addLayer(e.layer);
             e.layer.on('pm:edit', () => { updateCalculations(); saveToLocalStorage(); });
             updateCalculations(); saveToLocalStorage();
@@ -305,7 +326,7 @@
             updateCalculations(); saveToLocalStorage();
         });
 
-        // 6. การเปลี่ยนค่า Slider และปุ่ม Preset ของแต่ละโหมด
+        // 8. การเปลี่ยนค่า Slider และปุ่ม Preset
         sliderCrowd.addEventListener('input', () => {
             document.querySelectorAll('.btn-c-preset').forEach(b => b.classList.remove('active'));
             updateCalculations();
@@ -333,14 +354,14 @@
             });
         });
 
-        // 7. ล้างข้อมูล
+        // 9. ล้างข้อมูล
         document.getElementById('btn-clear').addEventListener('click', () => {
             if(confirm('คุณต้องการล้างพื้นที่ทั้งหมดใช่หรือไม่?')) {
                 drawnItems.clearLayers(); updateCalculations(); localStorage.removeItem(STORAGE_KEY);
             }
         });
 
-        // 8. ถ่ายรูปภาพ (Fixed Version)
+        // 10. ถ่ายรูปภาพ
         document.getElementById('btn-export').addEventListener('click', () => {
             const loader = document.getElementById('loader');
             const btn = document.getElementById('btn-export');
